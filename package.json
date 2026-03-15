@@ -1,0 +1,36 @@
+{
+  "name": "apollo-lazy-cache-persist",
+  "version": "1.0.0",
+  "description": "Lazy per-query cache persistence for Apollo Client to reduce memory spikes and speed up startup.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abhinaybathina/apollo-lazy-cache-persist.git"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "author": "Abhinay Bathina",
+  "keywords": [
+    "apollo",
+    "graphql",
+    "apollo-client",
+    "cache",
+    "persist",
+    "lazy",
+    "optimization",
+    "indexeddb"
+  ],
+  "peerDependencies": {
+    "@apollo/client": "^3"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
