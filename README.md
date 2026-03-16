@@ -130,7 +130,7 @@ createLazyCacheStore({
 ## IndexedDB (Recommended)
 
 Using localforage:
-```
+```js
 import localforage from "localforage"
 
 const storage = localforage.createInstance({
@@ -179,7 +179,7 @@ Large variable objects can produce very long cache keys.
 
 You can optionally provide a hashing function.
 
-```
+```js
 const lazyLink = createLazyCacheLink({
   cache,
   store,
