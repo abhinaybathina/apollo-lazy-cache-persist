@@ -1,73 +1,49 @@
-# React + TypeScript + Vite
+# Apollo persistence comparison app
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This app compares:
 
-Currently, two official plugins are available:
+- **Default strategy**: [`apollo3-cache-persist`](https://github.com/apollographql/apollo-cache-persist) restoring a full persisted cache snapshot at startup.
+- **Lazy strategy**: [`apollo-lazy-cache-persist`](https://www.npmjs.com/package/apollo-lazy-cache-persist) restoring query results lazily on demand.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## What this demo measures
 
-## React Compiler
+On each run, the app executes both flows and captures:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. **Startup restore time**
+   - `apollo3-cache-persist`: time spent running `persistor.restore()`
+   - `apollo-lazy-cache-persist`: near-zero startup restore (no full cache restore)
+2. **First query time** (`GetUsers` with `cache-first`)
+3. **Persisted payload size**
+   - default: full cache snapshot bytes
+   - lazy: one query entry bytes
+4. **Runtime cache size** after the first query
 
-## Expanding the ESLint configuration
+The UI runs multiple iterations and displays per-run details and averages.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Run locally
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+From the repository root:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd /home/runner/work/apollo-lazy-cache-persist/apollo-lazy-cache-persist/examples/react-comparison
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Open the local Vite URL (usually `http://localhost:5173`) and click **Run 5x comparison**.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Notes
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- The app uses `https://graphqlzero.almansi.me/api` for network queries.
+- Seeded data is written into each persistence strategy before timing starts, so both modes run with comparable stored content.
+- Browser/device performance affects absolute numbers; focus on relative differences.
+
+## Expected comparison pattern
+
+In most runs you should see:
+
+- **Lower startup time** for lazy mode.
+- **Smaller persisted unit size** per query in lazy mode.
+- **Potentially similar or slightly different first query time**, depending on network conditions.
+
+This mirrors the package design goal: avoid full startup cache hydration and restore data only when queries are actually used.
