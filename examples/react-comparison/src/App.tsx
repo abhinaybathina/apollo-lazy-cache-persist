@@ -221,7 +221,7 @@ async function runLazyFlow(): Promise<RunMetrics> {
 
   const client = new ApolloClient({
     cache,
-    link: ApolloLink.from([lazyLink, new HttpLink({ uri: GRAPHQL_URL })]),
+    link: ApolloLink.from([lazyLink as unknown as ApolloLink, new HttpLink({ uri: GRAPHQL_URL })]),
   })
 
   const startupStart = nowMs()
