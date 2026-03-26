@@ -31,6 +31,8 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "@apollo/client": "^3.14.1",
+    "graphql": "^16.13.2",
     "typescript": "^5.9.3"
   }
 }

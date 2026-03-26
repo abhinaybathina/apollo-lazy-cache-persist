@@ -1,4 +1,4 @@
-import { ApolloLink } from "@apollo/client/link/core";
+import { ApolloLink, Observable } from "@apollo/client/core";
 import { getOperationName } from "@apollo/client/utilities";
 import {
   generateCacheKey,
@@ -60,14 +60,22 @@ export function createLazyCacheLink({
       }
     });
 
-    return forward(operation).map((result) => {
-      networkResolved = true;
+    return new Observable((observer) => {
+      const sub = forward(operation).subscribe({
+        next: (result) => {
+          networkResolved = true;
 
-      if (result?.data) {
-        store.set(key, result.data);
-      }
+          if (result?.data) {
+            store.set(key, result.data);
+          }
 
-      return result;
+          observer.next(result);
+        },
+        error: (err) => observer.error(err),
+        complete: () => observer.complete(),
+      });
+
+      return () => sub.unsubscribe();
     });
   });
 }

@@ -238,6 +238,53 @@ Example applications:
 | Persistence granularity | Per query | Entire cache |
 | Manual cache updates persisted | No | Yes |
 
+## Benchmark results (large reload profile, 50–80MB cache target)
+
+### Web benchmark (`examples/react-comparison/web_large_reload_isolated_compare.cjs`, large-reload profile, 3 runs, isolated browser contexts)
+
+| Metric | apollo3-cache-persist (default) | apollo-lazy-cache-persist (lazy) | Delta (default - lazy) |
+|------|------:|------:|------:|
+| Startup restore time | 113.77 ms | 0.10 ms | 113.67 ms faster with lazy |
+| First query time | 163.90 ms | 297.50 ms | -133.60 ms (default faster in this run) |
+| Startup in-memory cache after reload | 56.56 MB | 2 B | 56.56 MB lower with lazy |
+| Persisted size | 56.56 MB | 8.48 MB | 48.09 MB smaller with lazy |
+| Runtime full cache size (after first query) | 56.56 MB | 8.51 MB | 48.05 MB smaller with lazy |
+| Startup JS heap snapshot (used heap) | 214.44 MB | 197.68 MB | 16.76 MB lower with lazy |
+| Startup JS heap snapshot (total heap) | 259.40 MB | 240.72 MB | 18.68 MB lower with lazy |
+
+### React Native-style benchmark (`examples/react-comparison/rn_large_reload_compare.cjs`, 3 runs)
+
+This benchmark uses an AsyncStorage-like adapter and Node runtime to emulate React Native persistence behavior without UI overhead.
+
+| Metric | apollo3-cache-persist (default) | apollo-lazy-cache-persist (lazy) | Delta (default - lazy) |
+|------|------:|------:|------:|
+| Startup restore time | 206.01 ms | 22.32 ms | 183.69 ms faster with lazy |
+| First query time | 299.38 ms | 488.42 ms | -189.05 ms (default faster in this run) |
+| Startup in-memory cache after reload | 56.56 MB | ~0 MB (2 B) | 56.56 MB lower with lazy |
+| Persisted size | 56.94 MB | 8.48 MB | 48.46 MB smaller with lazy |
+| Runtime full cache size (after first query) | 56.56 MB | 8.51 MB | 48.05 MB smaller with lazy |
+| Startup memory snapshot (heap total) | 270.49 MB | 141.89 MB | 128.60 MB lower with lazy |
+| Startup memory snapshot delta (RSS) | 90.41 MB | 1.17 MB | 89.25 MB lower with lazy |
+| Startup memory snapshot delta (heap total) | 139.11 MB | 32.25 MB | 106.86 MB lower with lazy |
+| Startup memory snapshot delta (heap used) | 40.09 MB | -0.47 MB | 40.56 MB lower with lazy |
+| Startup memory snapshot delta (external) | 40 B | 40 B | 0 B |
+
+Notes:
+
+- Results vary by device/OS/runtime and storage backend implementation.
+- In this large-reload profile, lazy mode consistently minimizes startup restore time and startup memory footprint.
+- First query can be slower in lazy mode when data is restored on demand; this is expected tradeoff behavior.
+- Memory snapshots in the web benchmark are captured from `performance.memory` during the startup restore window and reported as absolute used/total JS heap snapshots; browser allocator/GC behavior can still introduce noise.
+- Memory snapshots in the React Native-style benchmark are captured from `process.memoryUsage()` during the startup restore window.
+- React Native-style benchmark runs are executed in isolated worker processes with `--expose-gc` so each sample starts from a cleaner heap baseline and reduces cross-run leftover memory effects.
+- Interpretation: the isolated React Native-style measurement is the more reliable startup-heap signal here, and it shows lazy mode using less startup heap overall.
+- Web isolated benchmark can be reproduced with:
+  - `cd examples/react-comparison`
+  - `npm run benchmark:web-large-reload-isolated`
+- React Native-style benchmark can be reproduced with:
+  - `cd examples/react-comparison`
+  - `npm run benchmark:rn-large-reload`
+
 # License
 
 MIT
