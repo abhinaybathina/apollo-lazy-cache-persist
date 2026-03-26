@@ -238,22 +238,39 @@ Example applications:
 | Persistence granularity | Per query | Entire cache |
 | Manual cache updates persisted | No | Yes |
 
-## Benchmark results (react-comparison example)
+## Benchmark results (large reload profile, 50–80MB cache target)
 
-From the repository benchmark app at `examples/react-comparison`, using 10 runs:
+### Web benchmark (`examples/react-comparison`, large-reload profile, 3 runs)
 
 | Metric | apollo3-cache-persist (default) | apollo-lazy-cache-persist (lazy) | Delta (default - lazy) |
 |------|------:|------:|------:|
-| Startup restore time | 2.785 ms | 0.003 ms | 2.782 ms faster with lazy |
-| First query time | 18.463 ms | 6.320 ms | 12.144 ms faster with lazy |
-| Persisted entry size | 201,562 B | 8,450 B | 193,112 B smaller with lazy |
-| Runtime full cache size (after first query) | 183,150 B | 8,625 B | 174,525 B smaller with lazy |
+| Startup restore time | 125.83 ms | 0.00 ms | 125.83 ms faster with lazy |
+| First query time | 159.77 ms | 257.20 ms | -97.43 ms (default faster in this run) |
+| Startup in-memory cache after reload | 56.56 MB | 2 B | 56.56 MB lower with lazy |
+| Persisted size | 56.56 MB | 8.48 MB | 48.09 MB smaller with lazy |
+| Runtime full cache size (after first query) | 56.56 MB | 8.51 MB | 48.05 MB smaller with lazy |
+
+### React Native-style benchmark (`examples/react-comparison/rn_large_reload_compare.cjs`, 3 runs)
+
+This benchmark uses an AsyncStorage-like adapter and Node runtime to emulate React Native persistence behavior without UI overhead.
+
+| Metric | apollo3-cache-persist (default) | apollo-lazy-cache-persist (lazy) | Delta (default - lazy) |
+|------|------:|------:|------:|
+| Startup restore time | 113.96 ms | 0.00 ms | 113.96 ms faster with lazy |
+| First query time | 210.63 ms | 298.31 ms | -87.67 ms (default faster in this run) |
+| Startup in-memory cache after reload | 56.56 MB | ~0 MB (2 B) | 56.56 MB lower with lazy |
+| Persisted size | 56.94 MB | 8.48 MB | 48.46 MB smaller with lazy |
+| Runtime full cache size (after first query) | 56.56 MB | 8.51 MB | 48.05 MB smaller with lazy |
 
 Notes:
 
-- Results vary by browser, machine, and network conditions.
-- Treat these numbers as directional evidence, not absolute guarantees.
-- You can reproduce and validate with the app in `examples/react-comparison`.
+- Results vary by device/OS/runtime and storage backend implementation.
+- In this large-reload profile, lazy mode consistently minimizes startup restore time and startup memory footprint.
+- First query can be slower in lazy mode when data is restored on demand; this is expected tradeoff behavior.
+- Web benchmark can be reproduced from the UI button **Run 3x large reload test (~60MB)**.
+- React Native-style benchmark can be reproduced with:
+  - `cd /home/runner/work/apollo-lazy-cache-persist/apollo-lazy-cache-persist/examples/react-comparison`
+  - `npm run benchmark:rn-large-reload`
 
 # License
 
