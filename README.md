@@ -238,6 +238,23 @@ Example applications:
 | Persistence granularity | Per query | Entire cache |
 | Manual cache updates persisted | No | Yes |
 
+## Benchmark results (react-comparison example)
+
+From the repository benchmark app at `examples/react-comparison`, using 10 runs:
+
+| Metric | apollo3-cache-persist (default) | apollo-lazy-cache-persist (lazy) | Delta (default - lazy) |
+|------|------:|------:|------:|
+| Startup restore time | 2.785 ms | 0.003 ms | 2.782 ms faster with lazy |
+| First query time | 18.463 ms | 6.320 ms | 12.144 ms faster with lazy |
+| Persisted entry size | 201,562 B | 8,450 B | 193,112 B smaller with lazy |
+| Runtime full cache size (after first query) | 183,150 B | 8,625 B | 174,525 B smaller with lazy |
+
+Notes:
+
+- Results vary by browser, machine, and network conditions.
+- Treat these numbers as directional evidence, not absolute guarantees.
+- You can reproduce and validate with the app in `examples/react-comparison`.
+
 # License
 
 MIT
