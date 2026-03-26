@@ -1,5 +1,6 @@
 const path = require('path')
 const fs = require('fs')
+const { spawnSync } = require('child_process')
 const { ApolloClient, InMemoryCache, ApolloLink, Observable, gql } = require('@apollo/client/core')
 const { CachePersistor } = require('apollo3-cache-persist')
 
@@ -41,6 +42,9 @@ const LARGE_POSTS_COUNT = 12000
 const LARGE_USERS_COUNT = 4000
 const LARGE_USER_TEXT = 'U'.repeat(2048)
 const LARGE_POST_TEXT = 'P'.repeat(4096)
+const IS_WORKER = process.argv.includes('--worker')
+const WORKER_MODE_ARG = process.argv.find((arg) => arg.startsWith('--mode='))
+const WORKER_MODE = WORKER_MODE_ARG ? WORKER_MODE_ARG.split('=')[1] : null
 
 class AsyncStorageLike {
   constructor() {
@@ -93,6 +97,14 @@ function captureMemorySnapshot() {
     heapUsedBytes: usage.heapUsed,
     externalBytes: usage.external,
   }
+}
+
+function forceGc(cycles = 3) {
+  if (typeof global.gc !== 'function') return false
+  for (let i = 0; i < cycles; i += 1) {
+    global.gc()
+  }
+  return true
 }
 
 function subtractMemory(after, before) {
@@ -166,6 +178,7 @@ async function seedLazyStorage(storage, seedData) {
 }
 
 async function runDefaultFlow(seedData) {
+  forceGc()
   const storage = new AsyncStorageLike()
   const seedCache = new InMemoryCache()
   await seedDefaultStorage(storage, seedCache, seedData)
@@ -186,6 +199,7 @@ async function runDefaultFlow(seedData) {
     debug: false,
   })
   await persistor.restore()
+  forceGc()
   const startupMemoryAfter = captureMemorySnapshot()
   const startupMs = nowMs() - startupStart
 
@@ -215,6 +229,7 @@ async function runDefaultFlow(seedData) {
 }
 
 async function runLazyFlow(seedData) {
+  forceGc()
   const storage = new AsyncStorageLike()
   await seedLazyStorage(storage, seedData)
 
@@ -233,6 +248,7 @@ async function runLazyFlow(seedData) {
   const startupStart = nowMs()
   const startupMemoryBefore = captureMemorySnapshot()
   await Promise.resolve()
+  forceGc()
   const startupMemoryAfter = captureMemorySnapshot()
   const startupMs = nowMs() - startupStart
   const startupCacheSizeBytes = safeJsonSize(cache.extract())
@@ -260,13 +276,36 @@ async function runLazyFlow(seedData) {
   }
 }
 
-;(async () => {
+function runWorker(mode) {
+  const worker = spawnSync(process.execPath, ['--expose-gc', __filename, '--worker', `--mode=${mode}`], {
+    encoding: 'utf8',
+    cwd: __dirname,
+  })
+
+  if (worker.status !== 0) {
+    throw new Error(worker.stderr || worker.stdout || `Worker failed for mode=${mode}`)
+  }
+
+  const output = (worker.stdout || '').trim().split('\n').filter(Boolean).at(-1)
+  if (!output) {
+    throw new Error(`Worker returned no JSON output for mode=${mode}`)
+  }
+
+  return JSON.parse(output)
+}
+
+async function runWorkerMode() {
   const seedData = buildLargeSeedData()
+  const result = WORKER_MODE === 'default' ? await runDefaultFlow(seedData) : await runLazyFlow(seedData)
+  console.log(JSON.stringify(result))
+}
+
+async function runParentMode() {
   const all = []
 
   for (let run = 0; run < RUNS; run += 1) {
-    all.push(await runDefaultFlow(seedData))
-    all.push(await runLazyFlow(seedData))
+    all.push(runWorker('default'))
+    all.push(runWorker('lazy'))
   }
 
   const defaults = all.filter((result) => result.mode === 'default')
@@ -351,6 +390,17 @@ async function runLazyFlow(seedData) {
   }
 
   console.log(JSON.stringify(summary, null, 2))
+}
+
+;(async () => {
+  if (IS_WORKER) {
+    if (WORKER_MODE !== 'default' && WORKER_MODE !== 'lazy') {
+      throw new Error('Worker mode must be default or lazy')
+    }
+    await runWorkerMode()
+    return
+  }
+  await runParentMode()
 })().catch((error) => {
   console.error(error)
   process.exit(1)
