@@ -258,16 +258,16 @@ This benchmark uses an AsyncStorage-like adapter and Node runtime to emulate Rea
 
 | Metric | apollo3-cache-persist (default) | apollo-lazy-cache-persist (lazy) | Delta (default - lazy) |
 |------|------:|------:|------:|
-| Startup restore time | 153.58 ms | 0.09 ms | 153.49 ms faster with lazy |
-| First query time | 360.13 ms | 407.72 ms | -47.59 ms (default faster in this run) |
+| Startup restore time | 206.01 ms | 22.32 ms | 183.69 ms faster with lazy |
+| First query time | 299.38 ms | 488.42 ms | -189.05 ms (default faster in this run) |
 | Startup in-memory cache after reload | 56.56 MB | ~0 MB (2 B) | 56.56 MB lower with lazy |
 | Persisted size | 56.94 MB | 8.48 MB | 48.46 MB smaller with lazy |
 | Runtime full cache size (after first query) | 56.56 MB | 8.51 MB | 48.05 MB smaller with lazy |
-| Startup memory snapshot (heap total) | 405.30 MB | 502.44 MB | -97.14 MB (lazy higher in this run) |
-| Startup memory snapshot delta (RSS) | 44.55 MB | 0 MB | 44.55 MB lower with lazy |
-| Startup memory snapshot delta (heap total) | 64.42 MB | 0 MB | 64.42 MB lower with lazy |
-| Startup memory snapshot delta (heap used) | 76.72 MB | ~0 MB (787 B) | 76.72 MB lower with lazy |
-| Startup memory snapshot delta (external) | 13.33 B | 0 B | 13.33 B lower with lazy |
+| Startup memory snapshot (heap total) | 270.49 MB | 141.89 MB | 128.60 MB lower with lazy |
+| Startup memory snapshot delta (RSS) | 90.41 MB | 1.17 MB | 89.25 MB lower with lazy |
+| Startup memory snapshot delta (heap total) | 139.11 MB | 32.25 MB | 106.86 MB lower with lazy |
+| Startup memory snapshot delta (heap used) | 40.09 MB | -0.47 MB | 40.56 MB lower with lazy |
+| Startup memory snapshot delta (external) | 40 B | 40 B | 0 B |
 
 Notes:
 
@@ -276,6 +276,7 @@ Notes:
 - First query can be slower in lazy mode when data is restored on demand; this is expected tradeoff behavior.
 - Memory snapshots in the web benchmark are captured from `performance.memory` during the startup restore window and reported as absolute used/total JS heap snapshots.
 - Memory snapshots in the React Native-style benchmark are captured from `process.memoryUsage()` during the startup restore window.
+- React Native-style benchmark runs are executed in isolated worker processes with `--expose-gc` so each sample starts from a cleaner heap baseline and reduces cross-run leftover memory effects.
 - Web benchmark can be reproduced from the UI button **Run 3x large reload test (~60MB)**.
 - React Native-style benchmark can be reproduced with:
   - `cd examples/react-comparison`
