@@ -89,6 +89,7 @@ function captureMemorySnapshot() {
   const usage = process.memoryUsage()
   return {
     rssBytes: usage.rss,
+    heapTotalBytes: usage.heapTotal,
     heapUsedBytes: usage.heapUsed,
     externalBytes: usage.external,
   }
@@ -97,6 +98,7 @@ function captureMemorySnapshot() {
 function subtractMemory(after, before) {
   return {
     rssBytes: after.rssBytes - before.rssBytes,
+    heapTotalBytes: after.heapTotalBytes - before.heapTotalBytes,
     heapUsedBytes: after.heapUsedBytes - before.heapUsedBytes,
     externalBytes: after.externalBytes - before.externalBytes,
   }
@@ -208,6 +210,7 @@ async function runDefaultFlow(seedData) {
     fullCacheSizeBytes: safeJsonSize(cacheSnapshot),
     persistedEntryBytes: safeJsonSize(persistedSnapshot),
     startupMemoryDelta: subtractMemory(startupMemoryAfter, startupMemoryBefore),
+    startupMemorySnapshot: startupMemoryAfter,
   }
 }
 
@@ -253,6 +256,7 @@ async function runLazyFlow(seedData) {
     fullCacheSizeBytes: safeJsonSize(cacheSnapshot),
     persistedEntryBytes: safeJsonSize(usersEntry),
     startupMemoryDelta: subtractMemory(startupMemoryAfter, startupMemoryBefore),
+    startupMemorySnapshot: startupMemoryAfter,
   }
 }
 
@@ -280,8 +284,15 @@ async function runLazyFlow(seedData) {
         persistedEntryBytes: avg(defaults.map((result) => result.persistedEntryBytes)),
         startupMemoryDelta: {
           rssBytes: avg(defaults.map((result) => result.startupMemoryDelta.rssBytes)),
+          heapTotalBytes: avg(defaults.map((result) => result.startupMemoryDelta.heapTotalBytes)),
           heapUsedBytes: avg(defaults.map((result) => result.startupMemoryDelta.heapUsedBytes)),
           externalBytes: avg(defaults.map((result) => result.startupMemoryDelta.externalBytes)),
+        },
+        startupMemorySnapshot: {
+          rssBytes: avg(defaults.map((result) => result.startupMemorySnapshot.rssBytes)),
+          heapTotalBytes: avg(defaults.map((result) => result.startupMemorySnapshot.heapTotalBytes)),
+          heapUsedBytes: avg(defaults.map((result) => result.startupMemorySnapshot.heapUsedBytes)),
+          externalBytes: avg(defaults.map((result) => result.startupMemorySnapshot.externalBytes)),
         },
       },
       lazy: {
@@ -292,8 +303,15 @@ async function runLazyFlow(seedData) {
         persistedEntryBytes: avg(lazies.map((result) => result.persistedEntryBytes)),
         startupMemoryDelta: {
           rssBytes: avg(lazies.map((result) => result.startupMemoryDelta.rssBytes)),
+          heapTotalBytes: avg(lazies.map((result) => result.startupMemoryDelta.heapTotalBytes)),
           heapUsedBytes: avg(lazies.map((result) => result.startupMemoryDelta.heapUsedBytes)),
           externalBytes: avg(lazies.map((result) => result.startupMemoryDelta.externalBytes)),
+        },
+        startupMemorySnapshot: {
+          rssBytes: avg(lazies.map((result) => result.startupMemorySnapshot.rssBytes)),
+          heapTotalBytes: avg(lazies.map((result) => result.startupMemorySnapshot.heapTotalBytes)),
+          heapUsedBytes: avg(lazies.map((result) => result.startupMemorySnapshot.heapUsedBytes)),
+          externalBytes: avg(lazies.map((result) => result.startupMemorySnapshot.externalBytes)),
         },
       },
     },
@@ -310,12 +328,20 @@ async function runLazyFlow(seedData) {
         rssBytes:
           avg(defaults.map((result) => result.startupMemoryDelta.rssBytes)) -
           avg(lazies.map((result) => result.startupMemoryDelta.rssBytes)),
+        heapTotalBytes:
+          avg(defaults.map((result) => result.startupMemoryDelta.heapTotalBytes)) -
+          avg(lazies.map((result) => result.startupMemoryDelta.heapTotalBytes)),
         heapUsedBytes:
           avg(defaults.map((result) => result.startupMemoryDelta.heapUsedBytes)) -
           avg(lazies.map((result) => result.startupMemoryDelta.heapUsedBytes)),
         externalBytes:
           avg(defaults.map((result) => result.startupMemoryDelta.externalBytes)) -
           avg(lazies.map((result) => result.startupMemoryDelta.externalBytes)),
+      },
+      startupMemorySnapshot: {
+        heapTotalBytes:
+          avg(defaults.map((result) => result.startupMemorySnapshot.heapTotalBytes)) -
+          avg(lazies.map((result) => result.startupMemorySnapshot.heapTotalBytes)),
       },
     },
     startupCacheSizeMb: {

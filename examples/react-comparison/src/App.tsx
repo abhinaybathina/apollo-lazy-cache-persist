@@ -26,7 +26,7 @@ type RunMetrics = {
   startupCacheSizeBytes: number
   fullCacheSizeBytes: number
   persistedEntryBytes: number
-  startupMemoryDelta: {
+  startupMemorySnapshot: {
     heapUsedBytes: number
     totalHeapBytes: number
   }
@@ -106,16 +106,6 @@ function captureMemorySnapshot() {
   return {
     heapUsedBytes: memory.usedJSHeapSize,
     totalHeapBytes: memory.totalJSHeapSize,
-  }
-}
-
-function subtractMemory(
-  after: { heapUsedBytes: number; totalHeapBytes: number },
-  before: { heapUsedBytes: number; totalHeapBytes: number },
-) {
-  return {
-    heapUsedBytes: after.heapUsedBytes - before.heapUsedBytes,
-    totalHeapBytes: after.totalHeapBytes - before.totalHeapBytes,
   }
 }
 
@@ -242,7 +232,6 @@ async function runDefaultFlow(profile: BenchmarkProfile): Promise<RunMetrics> {
   })
 
   const startupStart = nowMs()
-  const startupMemoryBefore = captureMemorySnapshot()
   const persistor = new CachePersistor<NormalizedCacheObject>({
     cache,
     storage: new LocalForageWrapper(storage),
@@ -252,7 +241,7 @@ async function runDefaultFlow(profile: BenchmarkProfile): Promise<RunMetrics> {
   })
 
   await persistor.restore()
-  const startupMemoryAfter = captureMemorySnapshot()
+  const startupMemorySnapshot = captureMemorySnapshot()
   const startupMs = nowMs() - startupStart
   const startupCacheSizeBytes = safeJsonSize(cache.extract())
 
@@ -274,7 +263,7 @@ async function runDefaultFlow(profile: BenchmarkProfile): Promise<RunMetrics> {
     startupCacheSizeBytes,
     fullCacheSizeBytes: safeJsonSize(cacheSnapshot),
     persistedEntryBytes: safeJsonSize(persistedSnapshot),
-    startupMemoryDelta: subtractMemory(startupMemoryAfter, startupMemoryBefore),
+    startupMemorySnapshot,
     timestamp: new Date().toISOString(),
   }
 }
@@ -307,9 +296,8 @@ async function runLazyFlow(profile: BenchmarkProfile): Promise<RunMetrics> {
   })
 
   const startupStart = nowMs()
-  const startupMemoryBefore = captureMemorySnapshot()
   await Promise.resolve()
-  const startupMemoryAfter = captureMemorySnapshot()
+  const startupMemorySnapshot = captureMemorySnapshot()
   const startupMs = nowMs() - startupStart
   const startupCacheSizeBytes = safeJsonSize(cache.extract())
 
@@ -331,7 +319,7 @@ async function runLazyFlow(profile: BenchmarkProfile): Promise<RunMetrics> {
     startupCacheSizeBytes,
     fullCacheSizeBytes: safeJsonSize(cacheSnapshot),
     persistedEntryBytes: safeJsonSize(usersEntry),
-    startupMemoryDelta: subtractMemory(startupMemoryAfter, startupMemoryBefore),
+    startupMemorySnapshot,
     timestamp: new Date().toISOString(),
   }
 }
@@ -356,12 +344,10 @@ function App() {
     const lazyPersisted = average(lazies.map((result) => result.persistedEntryBytes))
     const defaultStartupCache = average(defaults.map((result) => result.startupCacheSizeBytes))
     const lazyStartupCache = average(lazies.map((result) => result.startupCacheSizeBytes))
-    const defaultStartupHeapDelta = average(
-      defaults.map((result) => result.startupMemoryDelta.heapUsedBytes),
-    )
-    const lazyStartupHeapDelta = average(lazies.map((result) => result.startupMemoryDelta.heapUsedBytes))
-    const defaultStartupTotalHeapDelta = average(defaults.map((result) => result.startupMemoryDelta.totalHeapBytes))
-    const lazyStartupTotalHeapDelta = average(lazies.map((result) => result.startupMemoryDelta.totalHeapBytes))
+    const defaultStartupHeapUsed = average(defaults.map((result) => result.startupMemorySnapshot.heapUsedBytes))
+    const lazyStartupHeapUsed = average(lazies.map((result) => result.startupMemorySnapshot.heapUsedBytes))
+    const defaultStartupTotalHeap = average(defaults.map((result) => result.startupMemorySnapshot.totalHeapBytes))
+    const lazyStartupTotalHeap = average(lazies.map((result) => result.startupMemorySnapshot.totalHeapBytes))
 
     return {
       defaultStartup,
@@ -376,12 +362,12 @@ function App() {
       defaultStartupCache,
       lazyStartupCache,
       startupCacheDelta: defaultStartupCache - lazyStartupCache,
-      defaultStartupHeapDelta,
-      lazyStartupHeapDelta,
-      startupHeapDelta: defaultStartupHeapDelta - lazyStartupHeapDelta,
-      defaultStartupTotalHeapDelta,
-      lazyStartupTotalHeapDelta,
-      startupTotalHeapDelta: defaultStartupTotalHeapDelta - lazyStartupTotalHeapDelta,
+      defaultStartupHeapUsed,
+      lazyStartupHeapUsed,
+      startupHeapUsedDelta: defaultStartupHeapUsed - lazyStartupHeapUsed,
+      defaultStartupTotalHeap,
+      lazyStartupTotalHeap,
+      startupTotalHeapDelta: defaultStartupTotalHeap - lazyStartupTotalHeap,
     }
   }, [results])
 
@@ -457,13 +443,13 @@ function App() {
           <p>delta: {formatBytes(summary.startupCacheDelta)} lower with lazy</p>
         </article>
         <article>
-          <h2>Average Startup Memory Snapshot</h2>
-          <p>default heap delta: {formatBytes(summary.defaultStartupHeapDelta)}</p>
-          <p>lazy heap delta: {formatBytes(summary.lazyStartupHeapDelta)}</p>
-          <p>delta: {formatBytes(summary.startupHeapDelta)} lower with lazy</p>
-          <p>default total heap delta: {formatBytes(summary.defaultStartupTotalHeapDelta)}</p>
-          <p>lazy total heap delta: {formatBytes(summary.lazyStartupTotalHeapDelta)}</p>
-          <p>delta: {formatBytes(summary.startupTotalHeapDelta)} lower with lazy</p>
+          <h2>Average Startup JS Heap Snapshot</h2>
+          <p>default used heap: {formatBytes(summary.defaultStartupHeapUsed)}</p>
+          <p>lazy used heap: {formatBytes(summary.lazyStartupHeapUsed)}</p>
+          <p>used heap delta: {formatBytes(summary.startupHeapUsedDelta)} lower with lazy</p>
+          <p>default total JS heap: {formatBytes(summary.defaultStartupTotalHeap)}</p>
+          <p>lazy total JS heap: {formatBytes(summary.lazyStartupTotalHeap)}</p>
+          <p>total heap delta: {formatBytes(summary.startupTotalHeapDelta)} lower with lazy</p>
         </article>
       </section>
 
@@ -478,7 +464,7 @@ function App() {
               <th>startup cache</th>
               <th>cache size</th>
               <th>persisted size</th>
-              <th>startup mem delta</th>
+              <th>startup total JS heap</th>
               <th>profile</th>
               <th>timestamp</th>
             </tr>
@@ -492,7 +478,7 @@ function App() {
                 <td>{formatBytes(result.startupCacheSizeBytes)}</td>
                 <td>{formatBytes(result.fullCacheSizeBytes)}</td>
                 <td>{formatBytes(result.persistedEntryBytes)}</td>
-                <td>{formatBytes(result.startupMemoryDelta.heapUsedBytes)}</td>
+                <td>{formatBytes(result.startupMemorySnapshot.totalHeapBytes)}</td>
                 <td>{result.profile}</td>
                 <td>{new Date(result.timestamp).toLocaleTimeString()}</td>
               </tr>

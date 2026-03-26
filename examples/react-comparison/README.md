@@ -17,8 +17,8 @@ On each run, the app executes both flows and captures:
    - default: full cache snapshot bytes
    - lazy: one query entry bytes
 4. **Runtime cache size** after the first query
-5. **Startup memory snapshot delta (web)**
-   - captured from `performance.memory.usedJSHeapSize` during startup restore window
+5. **Startup JS heap snapshot (web)**
+   - captured from `performance.memory` after startup restore window (`usedJSHeapSize` + `totalJSHeapSize`)
 
 The UI runs multiple iterations and displays per-run details and averages.
 
@@ -44,7 +44,7 @@ This profile seeds significantly larger users/posts payloads, simulates app relo
 2. Startup in-memory cache size immediately after reload
 3. First query time after reload
 4. Persisted storage size
-5. Startup memory snapshot delta (heap used)
+5. Startup JS heap snapshot (used + total heap)
 
 ## Notes
 
