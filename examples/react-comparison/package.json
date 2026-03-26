@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "benchmark:rn-large-reload": "node rn_large_reload_compare.cjs"
   },
   "dependencies": {
     "@apollo/client": "^3.14.1",
