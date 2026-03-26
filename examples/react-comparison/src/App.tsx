@@ -54,10 +54,10 @@ const POSTS_QUERY = gql`
 
 const TOTAL_RUNS = 5
 const LARGE_RELOAD_RUNS = 3
-const LARGE_POSTS_COUNT = 6000
-const LARGE_USERS_COUNT = 3000
+const LARGE_POSTS_COUNT = 12000
+const LARGE_USERS_COUNT = 4000
 const LARGE_USER_TEXT = 'U'.repeat(2048)
-const LARGE_POST_TEXT = 'P'.repeat(9_216)
+const LARGE_POST_TEXT = 'P'.repeat(4096)
 
 function nowMs() {
   return typeof performance !== 'undefined' ? performance.now() : Date.now()
@@ -166,15 +166,7 @@ async function seedStorageForDefault(storage: LocalForage, cache: InMemoryCache,
     },
   })
 
-  const persistor = new CachePersistor<NormalizedCacheObject>({
-    cache,
-    storage: new LocalForageWrapper(storage),
-    key: 'apollo-cache-persist',
-    trigger: false,
-    debug: false,
-  })
-
-  await persistor.persist()
+  await storage.setItem('apollo-cache-persist', cache.extract())
 }
 
 async function seedStorageForLazy(storage: LocalForage, profile: SeedProfile) {
