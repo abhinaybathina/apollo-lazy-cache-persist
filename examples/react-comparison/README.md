@@ -32,11 +32,23 @@ npm run dev
 
 Open the local Vite URL (usually `http://localhost:5173`) and click **Run 5x comparison**.
 
+For large persisted-cache testing (50–80MB equivalent payload), click:
+
+- **Run 3x large reload test (~60MB)**
+
+This profile seeds significantly larger users/posts payloads, simulates app reload behavior, and compares:
+
+1. Startup restore time
+2. Startup in-memory cache size immediately after reload
+3. First query time after reload
+4. Persisted storage size
+
 ## Notes
 
 - The app uses `https://graphqlzero.almansi.me/api` for network queries.
 - Seeded data is written into each persistence strategy before timing starts, so both modes run with comparable stored content.
 - Browser/device performance affects absolute numbers; focus on relative differences.
+- Large profile is intentionally heavy and may take longer per run.
 
 ## Expected comparison pattern
 
@@ -47,3 +59,12 @@ In most runs you should see:
 - **Potentially similar or slightly different first query time**, depending on network conditions.
 
 This mirrors the package design goal: avoid full startup cache hydration and restore data only when queries are actually used.
+
+## Interpreting large reload test results
+
+For the large profile, you should typically observe:
+
+- **default (`apollo3-cache-persist`)**: larger startup restore time and much larger startup in-memory cache due to full snapshot hydration.
+- **lazy (`apollo-lazy-cache-persist`)**: near-zero startup restore with low startup in-memory cache, because query data is restored on demand.
+
+This test is designed specifically to emulate the real-world “persisted cache has grown large, user reloads app” scenario.

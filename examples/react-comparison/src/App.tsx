@@ -15,11 +15,15 @@ import { createLazyCacheLink, createLazyCacheStore } from 'apollo-lazy-cache-per
 import './App.css'
 
 type Mode = 'default' | 'lazy'
+type BenchmarkProfile = 'standard' | 'large-reload'
+type SeedProfile = 'standard' | 'large'
 
 type RunMetrics = {
   mode: Mode
+  profile: BenchmarkProfile
   startupMs: number
   firstQueryMs: number
+  startupCacheSizeBytes: number
   fullCacheSizeBytes: number
   persistedEntryBytes: number
   timestamp: string
@@ -50,6 +54,11 @@ const POSTS_QUERY = gql`
 
 const GRAPHQL_URL = 'https://graphqlzero.almansi.me/api'
 const TOTAL_RUNS = 5
+const LARGE_RELOAD_RUNS = 3
+const LARGE_POSTS_COUNT = 6000
+const LARGE_USERS_COUNT = 3000
+const LARGE_USER_TEXT = 'U'.repeat(2048)
+const LARGE_POST_TEXT = 'P'.repeat(9_216)
 
 function nowMs() {
   return typeof performance !== 'undefined' ? performance.now() : Date.now()
@@ -78,32 +87,62 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
 }
 
-async function seedStorageForDefault(storage: LocalForage, cache: InMemoryCache) {
-  cache.writeQuery({
-    query: USERS_QUERY,
-    data: {
-      users: Array.from({ length: 300 }, (_, index) => ({
+function buildSeedData(profile: SeedProfile) {
+  if (profile === 'large') {
+    return {
+      users: Array.from({ length: LARGE_USERS_COUNT }, (_, index) => ({
         __typename: 'User',
         id: `${index + 1}`,
-        name: `Seed User ${index + 1}`,
+        name: `Seed User ${index + 1} ${LARGE_USER_TEXT}`,
         email: `seed${index + 1}@example.com`,
         company: {
           __typename: 'Company',
           name: `Seed Company ${(index % 20) + 1}`,
         },
       })),
+      posts: Array.from({ length: LARGE_POSTS_COUNT }, (_, index) => ({
+        __typename: 'Post',
+        id: `${index + 1}`,
+        title: `Seed Post ${index + 1}`,
+        body: LARGE_POST_TEXT,
+      })),
+    }
+  }
+
+  return {
+    users: Array.from({ length: 300 }, (_, index) => ({
+      __typename: 'User',
+      id: `${index + 1}`,
+      name: `Seed User ${index + 1}`,
+      email: `seed${index + 1}@example.com`,
+      company: {
+        __typename: 'Company',
+        name: `Seed Company ${(index % 20) + 1}`,
+      },
+    })),
+    posts: Array.from({ length: 400 }, (_, index) => ({
+      __typename: 'Post',
+      id: `${index + 1}`,
+      title: `Seed Post ${index + 1}`,
+      body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(4),
+    })),
+  }
+}
+
+async function seedStorageForDefault(storage: LocalForage, cache: InMemoryCache, profile: SeedProfile) {
+  const seedData = buildSeedData(profile)
+
+  cache.writeQuery({
+    query: USERS_QUERY,
+    data: {
+      users: seedData.users,
     },
   })
 
   cache.writeQuery({
     query: POSTS_QUERY,
     data: {
-      posts: Array.from({ length: 400 }, (_, index) => ({
-        __typename: 'Post',
-        id: `${index + 1}`,
-        title: `Seed Post ${index + 1}`,
-        body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(4),
-      })),
+      posts: seedData.posts,
     },
   })
 
@@ -118,48 +157,37 @@ async function seedStorageForDefault(storage: LocalForage, cache: InMemoryCache)
   await persistor.persist()
 }
 
-async function seedStorageForLazy(storage: LocalForage) {
+async function seedStorageForLazy(storage: LocalForage, profile: SeedProfile) {
   const store = createLazyCacheStore({
     storage,
     ttl: 24 * 60 * 60 * 1000,
   })
 
+  const seedData = buildSeedData(profile)
+
   const usersData = {
-    users: Array.from({ length: 300 }, (_, index) => ({
-      __typename: 'User',
-      id: `${index + 1}`,
-      name: `Seed User ${index + 1}`,
-      email: `seed${index + 1}@example.com`,
-      company: {
-        __typename: 'Company',
-        name: `Seed Company ${(index % 20) + 1}`,
-      },
-    })),
+    users: seedData.users,
   }
 
   const postsData = {
-    posts: Array.from({ length: 400 }, (_, index) => ({
-      __typename: 'Post',
-      id: `${index + 1}`,
-      title: `Seed Post ${index + 1}`,
-      body: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. '.repeat(4),
-    })),
+    posts: seedData.posts,
   }
 
   await store.set('GetUsers:{}', usersData)
   await store.set('GetPosts:{}', postsData)
 }
 
-async function runDefaultFlow(): Promise<RunMetrics> {
+async function runDefaultFlow(profile: BenchmarkProfile): Promise<RunMetrics> {
+  const seedProfile: SeedProfile = profile === 'large-reload' ? 'large' : 'standard'
   const storage = localforage.createInstance({
     name: 'apollo-comparison',
-    storeName: 'default-mode',
+    storeName: profile === 'large-reload' ? 'default-mode-large' : 'default-mode',
   })
 
   await storage.clear()
 
   const seedCache = new InMemoryCache()
-  await seedStorageForDefault(storage, seedCache)
+  await seedStorageForDefault(storage, seedCache, seedProfile)
 
   const cache = new InMemoryCache()
   const client = new ApolloClient({
@@ -178,6 +206,7 @@ async function runDefaultFlow(): Promise<RunMetrics> {
 
   await persistor.restore()
   const startupMs = nowMs() - startupStart
+  const startupCacheSizeBytes = safeJsonSize(cache.extract())
 
   const firstQueryStart = nowMs()
   await client.query({
@@ -191,22 +220,25 @@ async function runDefaultFlow(): Promise<RunMetrics> {
 
   return {
     mode: 'default',
+    profile,
     startupMs,
     firstQueryMs,
+    startupCacheSizeBytes,
     fullCacheSizeBytes: safeJsonSize(cacheSnapshot),
     persistedEntryBytes: safeJsonSize(persistedSnapshot),
     timestamp: new Date().toISOString(),
   }
 }
 
-async function runLazyFlow(): Promise<RunMetrics> {
+async function runLazyFlow(profile: BenchmarkProfile): Promise<RunMetrics> {
+  const seedProfile: SeedProfile = profile === 'large-reload' ? 'large' : 'standard'
   const storage = localforage.createInstance({
     name: 'apollo-comparison',
-    storeName: 'lazy-mode',
+    storeName: profile === 'large-reload' ? 'lazy-mode-large' : 'lazy-mode',
   })
 
   await storage.clear()
-  await seedStorageForLazy(storage)
+  await seedStorageForLazy(storage, seedProfile)
 
   const cache = new InMemoryCache()
   const store = createLazyCacheStore({
@@ -227,6 +259,7 @@ async function runLazyFlow(): Promise<RunMetrics> {
   const startupStart = nowMs()
   await Promise.resolve()
   const startupMs = nowMs() - startupStart
+  const startupCacheSizeBytes = safeJsonSize(cache.extract())
 
   const firstQueryStart = nowMs()
   await client.query({
@@ -240,8 +273,10 @@ async function runLazyFlow(): Promise<RunMetrics> {
 
   return {
     mode: 'lazy',
+    profile,
     startupMs,
     firstQueryMs,
+    startupCacheSizeBytes,
     fullCacheSizeBytes: safeJsonSize(cacheSnapshot),
     persistedEntryBytes: safeJsonSize(usersEntry),
     timestamp: new Date().toISOString(),
@@ -250,6 +285,7 @@ async function runLazyFlow(): Promise<RunMetrics> {
 
 function App() {
   const [results, setResults] = useState<RunMetrics[]>([])
+  const [profile, setProfile] = useState<BenchmarkProfile>('standard')
   const [running, setRunning] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -265,6 +301,8 @@ function App() {
 
     const defaultPersisted = average(defaults.map((result) => result.persistedEntryBytes))
     const lazyPersisted = average(lazies.map((result) => result.persistedEntryBytes))
+    const defaultStartupCache = average(defaults.map((result) => result.startupCacheSizeBytes))
+    const lazyStartupCache = average(lazies.map((result) => result.startupCacheSizeBytes))
 
     return {
       defaultStartup,
@@ -276,20 +314,26 @@ function App() {
       defaultPersisted,
       lazyPersisted,
       persistedDelta: defaultPersisted - lazyPersisted,
+      defaultStartupCache,
+      lazyStartupCache,
+      startupCacheDelta: defaultStartupCache - lazyStartupCache,
     }
   }, [results])
 
-  const runComparison = useCallback(async () => {
+  const runComparison = useCallback(async (nextProfile: BenchmarkProfile) => {
     setRunning(true)
     setError(null)
     setResults([])
+    setProfile(nextProfile)
+
+    const totalRuns = nextProfile === 'large-reload' ? LARGE_RELOAD_RUNS : TOTAL_RUNS
 
     try {
       const runs: RunMetrics[] = []
 
-      for (let run = 0; run < TOTAL_RUNS; run += 1) {
-        runs.push(await runDefaultFlow())
-        runs.push(await runLazyFlow())
+      for (let run = 0; run < totalRuns; run += 1) {
+        runs.push(await runDefaultFlow(nextProfile))
+        runs.push(await runLazyFlow(nextProfile))
       }
 
       setResults(runs)
@@ -309,11 +353,18 @@ function App() {
         <code>apollo-lazy-cache-persist</code>.
       </p>
 
-      <button className="run-button" disabled={running} onClick={runComparison}>
+      <button className="run-button" disabled={running} onClick={() => runComparison('standard')}>
         {running ? 'Running benchmark...' : `Run ${TOTAL_RUNS}x comparison`}
+      </button>
+      <button className="run-button" disabled={running} onClick={() => runComparison('large-reload')}>
+        {running ? 'Running benchmark...' : `Run ${LARGE_RELOAD_RUNS}x large reload test (~60MB)`}
       </button>
 
       {error ? <p className="error">Error: {error}</p> : null}
+
+      <p>
+        Active profile: <strong>{profile}</strong>
+      </p>
 
       <section className="summary-grid">
         <article>
@@ -334,6 +385,12 @@ function App() {
           <p>lazy per-query entry: {formatBytes(summary.lazyPersisted)}</p>
           <p>delta: {formatBytes(summary.persistedDelta)} lower with lazy</p>
         </article>
+        <article>
+          <h2>Average Startup Cache (Reload)</h2>
+          <p>default: {formatBytes(summary.defaultStartupCache)}</p>
+          <p>lazy: {formatBytes(summary.lazyStartupCache)}</p>
+          <p>delta: {formatBytes(summary.startupCacheDelta)} lower with lazy</p>
+        </article>
       </section>
 
       <section className="results">
@@ -344,8 +401,10 @@ function App() {
               <th>mode</th>
               <th>startup</th>
               <th>first query</th>
+              <th>startup cache</th>
               <th>cache size</th>
               <th>persisted size</th>
+              <th>profile</th>
               <th>timestamp</th>
             </tr>
           </thead>
@@ -355,8 +414,10 @@ function App() {
                 <td>{result.mode}</td>
                 <td>{formatMs(result.startupMs)}</td>
                 <td>{formatMs(result.firstQueryMs)}</td>
+                <td>{formatBytes(result.startupCacheSizeBytes)}</td>
                 <td>{formatBytes(result.fullCacheSizeBytes)}</td>
                 <td>{formatBytes(result.persistedEntryBytes)}</td>
+                <td>{result.profile}</td>
                 <td>{new Date(result.timestamp).toLocaleTimeString()}</td>
               </tr>
             ))}
