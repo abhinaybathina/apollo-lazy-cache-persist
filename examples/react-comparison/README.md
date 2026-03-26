@@ -25,7 +25,7 @@ The UI runs multiple iterations and displays per-run details and averages.
 From the repository root:
 
 ```bash
-cd /home/runner/work/apollo-lazy-cache-persist/apollo-lazy-cache-persist/examples/react-comparison
+cd examples/react-comparison
 npm install
 npm run dev
 ```
