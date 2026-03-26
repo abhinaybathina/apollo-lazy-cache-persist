@@ -267,7 +267,7 @@ async function runLazyFlow(profile: BenchmarkProfile): Promise<RunMetrics> {
 
   const client = new ApolloClient({
     cache,
-    link: ApolloLink.from([lazyLink as unknown as ApolloLink, createMockNetworkLink(seedData)]),
+    link: ApolloLink.from([lazyLink, createMockNetworkLink(seedData)]),
   })
 
   const startupStart = nowMs()
