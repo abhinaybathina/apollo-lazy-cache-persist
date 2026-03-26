@@ -1,5 +1,8 @@
 # apollo-lazy-cache-persist
 
+[![npm version](https://badge.fury.io/js/apollo-lazy-cache-persist.svg)](https://www.npmjs.com/package/apollo-lazy-cache-persist)
+[![npm downloads](https://img.shields.io/npm/dm/apollo-lazy-cache-persist.svg)](https://www.npmjs.com/package/apollo-lazy-cache-persist)
+
 Lazy query cache persistence for [Apollo Client](https://www.apollographql.com/docs/react/).
 
 Instead of restoring the **entire persisted cache during app startup**, this package restores **only the required query results when they are needed**.
