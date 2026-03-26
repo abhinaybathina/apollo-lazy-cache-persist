@@ -249,8 +249,8 @@ Example applications:
 | Startup in-memory cache after reload | 56.56 MB | 2 B | 56.56 MB lower with lazy |
 | Persisted size | 56.56 MB | 8.48 MB | 48.09 MB smaller with lazy |
 | Runtime full cache size (after first query) | 56.56 MB | 8.51 MB | 48.05 MB smaller with lazy |
-| Startup JS heap snapshot (used heap) | 255.36 MB | 377.08 MB | -121.72 MB (lazy higher in this run) |
-| Startup JS heap snapshot (total heap) | 327.32 MB | 446.52 MB | -119.20 MB (lazy higher in this run) |
+| Startup JS heap snapshot (used heap) | 255.36 MB | 377.08 MB | -121.72 MB (lazy higher in this browser run) |
+| Startup JS heap snapshot (total heap) | 327.32 MB | 446.52 MB | -119.20 MB (lazy higher in this browser run) |
 
 ### React Native-style benchmark (`examples/react-comparison/rn_large_reload_compare.cjs`, 3 runs)
 
@@ -274,9 +274,10 @@ Notes:
 - Results vary by device/OS/runtime and storage backend implementation.
 - In this large-reload profile, lazy mode consistently minimizes startup restore time and startup memory footprint.
 - First query can be slower in lazy mode when data is restored on demand; this is expected tradeoff behavior.
-- Memory snapshots in the web benchmark are captured from `performance.memory` during the startup restore window and reported as absolute used/total JS heap snapshots.
+- Memory snapshots in the web benchmark are captured from `performance.memory` during the startup restore window and reported as absolute used/total JS heap snapshots; browser allocator/GC behavior can make these snapshots noisy.
 - Memory snapshots in the React Native-style benchmark are captured from `process.memoryUsage()` during the startup restore window.
 - React Native-style benchmark runs are executed in isolated worker processes with `--expose-gc` so each sample starts from a cleaner heap baseline and reduces cross-run leftover memory effects.
+- Interpretation: the isolated React Native-style measurement is the more reliable startup-heap signal here, and it shows lazy mode using less startup heap overall.
 - Web benchmark can be reproduced from the UI button **Run 3x large reload test (~60MB)**.
 - React Native-style benchmark can be reproduced with:
   - `cd examples/react-comparison`
