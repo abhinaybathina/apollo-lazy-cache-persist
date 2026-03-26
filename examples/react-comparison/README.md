@@ -45,7 +45,7 @@ This profile seeds significantly larger users/posts payloads, simulates app relo
 
 ## Notes
 
-- The app uses `https://graphqlzero.almansi.me/api` for network queries.
+- The app uses an in-app mock Apollo link for deterministic query responses during benchmarking.
 - Seeded data is written into each persistence strategy before timing starts, so both modes run with comparable stored content.
 - Browser/device performance affects absolute numbers; focus on relative differences.
 - Large profile is intentionally heavy and may take longer per run.

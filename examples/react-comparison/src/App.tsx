@@ -1,8 +1,8 @@
 import {
   ApolloClient,
   ApolloLink,
-  HttpLink,
   InMemoryCache,
+  Observable,
   gql,
 } from '@apollo/client'
 import { CachePersistor, LocalForageWrapper } from 'apollo3-cache-persist'
@@ -52,7 +52,6 @@ const POSTS_QUERY = gql`
   }
 `
 
-const GRAPHQL_URL = 'https://graphqlzero.almansi.me/api'
 const TOTAL_RUNS = 5
 const LARGE_RELOAD_RUNS = 3
 const LARGE_POSTS_COUNT = 6000
@@ -85,6 +84,27 @@ function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`
+}
+
+function createMockNetworkLink(seedData: ReturnType<typeof buildSeedData>) {
+  return new ApolloLink((operation) =>
+    new Observable((observer) => {
+      if (operation.operationName === 'GetUsers') {
+        observer.next({ data: { users: seedData.users } })
+        observer.complete()
+        return
+      }
+
+      if (operation.operationName === 'GetPosts') {
+        observer.next({ data: { posts: seedData.posts } })
+        observer.complete()
+        return
+      }
+
+      observer.next({ data: {} })
+      observer.complete()
+    }),
+  )
 }
 
 function buildSeedData(profile: SeedProfile) {
@@ -179,6 +199,7 @@ async function seedStorageForLazy(storage: LocalForage, profile: SeedProfile) {
 
 async function runDefaultFlow(profile: BenchmarkProfile): Promise<RunMetrics> {
   const seedProfile: SeedProfile = profile === 'large-reload' ? 'large' : 'standard'
+  const seedData = buildSeedData(seedProfile)
   const storage = localforage.createInstance({
     name: 'apollo-comparison',
     storeName: profile === 'large-reload' ? 'default-mode-large' : 'default-mode',
@@ -192,7 +213,7 @@ async function runDefaultFlow(profile: BenchmarkProfile): Promise<RunMetrics> {
   const cache = new InMemoryCache()
   const client = new ApolloClient({
     cache,
-    link: new HttpLink({ uri: GRAPHQL_URL }),
+    link: createMockNetworkLink(seedData),
   })
 
   const startupStart = nowMs()
@@ -232,6 +253,7 @@ async function runDefaultFlow(profile: BenchmarkProfile): Promise<RunMetrics> {
 
 async function runLazyFlow(profile: BenchmarkProfile): Promise<RunMetrics> {
   const seedProfile: SeedProfile = profile === 'large-reload' ? 'large' : 'standard'
+  const seedData = buildSeedData(seedProfile)
   const storage = localforage.createInstance({
     name: 'apollo-comparison',
     storeName: profile === 'large-reload' ? 'lazy-mode-large' : 'lazy-mode',
@@ -253,7 +275,7 @@ async function runLazyFlow(profile: BenchmarkProfile): Promise<RunMetrics> {
 
   const client = new ApolloClient({
     cache,
-    link: ApolloLink.from([lazyLink as unknown as ApolloLink, new HttpLink({ uri: GRAPHQL_URL })]),
+    link: ApolloLink.from([lazyLink as unknown as ApolloLink, createMockNetworkLink(seedData)]),
   })
 
   const startupStart = nowMs()
