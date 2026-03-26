@@ -269,7 +269,7 @@ Notes:
 - First query can be slower in lazy mode when data is restored on demand; this is expected tradeoff behavior.
 - Web benchmark can be reproduced from the UI button **Run 3x large reload test (~60MB)**.
 - React Native-style benchmark can be reproduced with:
-  - `cd /home/runner/work/apollo-lazy-cache-persist/apollo-lazy-cache-persist/examples/react-comparison`
+  - `cd examples/react-comparison`
   - `npm run benchmark:rn-large-reload`
 
 # License

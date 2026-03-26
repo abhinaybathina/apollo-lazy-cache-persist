@@ -1,8 +1,16 @@
 const path = require('path')
+const fs = require('fs')
 const { ApolloClient, InMemoryCache, ApolloLink, Observable, gql } = require('@apollo/client/core')
 const { CachePersistor } = require('apollo3-cache-persist')
 
 const distRoot = path.resolve(__dirname, '../../dist')
+const distIndexPath = path.join(distRoot, 'index.js')
+
+if (!fs.existsSync(distIndexPath)) {
+  console.error('Missing build output at dist/index.js. Run `npm run build` from repository root first.')
+  process.exit(1)
+}
+
 const { createLazyCacheStore, createLazyCacheLink } = require(path.join(distRoot, 'index.js'))
 
 const USERS_QUERY = gql`

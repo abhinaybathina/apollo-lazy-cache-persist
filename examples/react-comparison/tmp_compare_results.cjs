@@ -1,7 +1,8 @@
 const { ApolloClient, InMemoryCache, ApolloLink, Observable, gql } = require('@apollo/client/core')
 const { CachePersistor } = require('apollo3-cache-persist')
-const { createLazyCacheStore } = require('/home/runner/work/apollo-lazy-cache-persist/apollo-lazy-cache-persist/dist/createLazyCacheStore.js')
-const { generateCacheKey } = require('/home/runner/work/apollo-lazy-cache-persist/apollo-lazy-cache-persist/dist/utils.js')
+const path = require('path')
+const { createLazyCacheStore } = require(path.resolve(__dirname, '../../dist/createLazyCacheStore.js'))
+const { generateCacheKey } = require(path.resolve(__dirname, '../../dist/utils.js'))
 
 class MemStore {
   constructor() { this.map = new Map() }
