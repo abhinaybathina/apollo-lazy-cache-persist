@@ -63,6 +63,23 @@ const LARGE_USERS_COUNT = 4000
 const LARGE_USER_TEXT = 'U'.repeat(2048)
 const LARGE_POST_TEXT = 'P'.repeat(4096)
 
+function getRunCount(profile: BenchmarkProfile) {
+  const defaultRuns = profile === 'large-reload' ? LARGE_RELOAD_RUNS : TOTAL_RUNS
+
+  if (typeof window === 'undefined') {
+    return defaultRuns
+  }
+
+  const value = new URLSearchParams(window.location.search).get('benchmarkRuns')
+  const parsed = value ? Number(value) : Number.NaN
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return defaultRuns
+  }
+
+  return Math.floor(parsed)
+}
+
 function nowMs() {
   return typeof performance !== 'undefined' ? performance.now() : Date.now()
 }
@@ -377,7 +394,7 @@ function App() {
     setResults([])
     setProfile(nextProfile)
 
-    const totalRuns = nextProfile === 'large-reload' ? LARGE_RELOAD_RUNS : TOTAL_RUNS
+    const totalRuns = getRunCount(nextProfile)
 
     try {
       const runs: RunMetrics[] = []
@@ -385,6 +402,34 @@ function App() {
       for (let run = 0; run < totalRuns; run += 1) {
         runs.push(await runDefaultFlow(nextProfile))
         runs.push(await runLazyFlow(nextProfile))
+      }
+
+      setResults(runs)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err)
+      setError(message)
+    } finally {
+      setRunning(false)
+    }
+  }, [])
+
+  const runModeOnly = useCallback(async (nextProfile: BenchmarkProfile, mode: Mode) => {
+    setRunning(true)
+    setError(null)
+    setResults([])
+    setProfile(nextProfile)
+
+    const totalRuns = getRunCount(nextProfile)
+
+    try {
+      const runs: RunMetrics[] = []
+
+      for (let run = 0; run < totalRuns; run += 1) {
+        if (mode === 'default') {
+          runs.push(await runDefaultFlow(nextProfile))
+        } else {
+          runs.push(await runLazyFlow(nextProfile))
+        }
       }
 
       setResults(runs)
@@ -409,6 +454,12 @@ function App() {
       </button>
       <button className="run-button" disabled={running} onClick={() => runComparison('large-reload')}>
         {running ? 'Running benchmark...' : `Run ${LARGE_RELOAD_RUNS}x large reload test (~60MB)`}
+      </button>
+      <button className="run-button" disabled={running} onClick={() => runModeOnly('large-reload', 'default')}>
+        {running ? 'Running benchmark...' : 'Run isolated large reload (default only)'}
+      </button>
+      <button className="run-button" disabled={running} onClick={() => runModeOnly('large-reload', 'lazy')}>
+        {running ? 'Running benchmark...' : 'Run isolated large reload (lazy only)'}
       </button>
 
       {error ? <p className="error">Error: {error}</p> : null}

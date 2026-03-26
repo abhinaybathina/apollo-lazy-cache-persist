@@ -240,17 +240,17 @@ Example applications:
 
 ## Benchmark results (large reload profile, 50–80MB cache target)
 
-### Web benchmark (`examples/react-comparison`, large-reload profile, 3 runs)
+### Web benchmark (`examples/react-comparison/web_large_reload_isolated_compare.cjs`, large-reload profile, 3 runs, isolated browser contexts)
 
 | Metric | apollo3-cache-persist (default) | apollo-lazy-cache-persist (lazy) | Delta (default - lazy) |
 |------|------:|------:|------:|
-| Startup restore time | 121.33 ms | 0.03 ms | 121.30 ms faster with lazy |
-| First query time | 160.40 ms | 303.47 ms | -143.07 ms (default faster in this run) |
+| Startup restore time | 113.77 ms | 0.10 ms | 113.67 ms faster with lazy |
+| First query time | 163.90 ms | 297.50 ms | -133.60 ms (default faster in this run) |
 | Startup in-memory cache after reload | 56.56 MB | 2 B | 56.56 MB lower with lazy |
 | Persisted size | 56.56 MB | 8.48 MB | 48.09 MB smaller with lazy |
 | Runtime full cache size (after first query) | 56.56 MB | 8.51 MB | 48.05 MB smaller with lazy |
-| Startup JS heap snapshot (used heap) | 255.36 MB | 377.08 MB | -121.72 MB (lazy higher in this browser run) |
-| Startup JS heap snapshot (total heap) | 327.32 MB | 446.52 MB | -119.20 MB (lazy higher in this browser run) |
+| Startup JS heap snapshot (used heap) | 214.44 MB | 197.68 MB | 16.76 MB lower with lazy |
+| Startup JS heap snapshot (total heap) | 259.40 MB | 240.72 MB | 18.68 MB lower with lazy |
 
 ### React Native-style benchmark (`examples/react-comparison/rn_large_reload_compare.cjs`, 3 runs)
 
@@ -274,11 +274,13 @@ Notes:
 - Results vary by device/OS/runtime and storage backend implementation.
 - In this large-reload profile, lazy mode consistently minimizes startup restore time and startup memory footprint.
 - First query can be slower in lazy mode when data is restored on demand; this is expected tradeoff behavior.
-- Memory snapshots in the web benchmark are captured from `performance.memory` during the startup restore window and reported as absolute used/total JS heap snapshots; browser allocator/GC behavior can make these snapshots noisy.
+- Memory snapshots in the web benchmark are captured from `performance.memory` during the startup restore window and reported as absolute used/total JS heap snapshots; browser allocator/GC behavior can still introduce noise.
 - Memory snapshots in the React Native-style benchmark are captured from `process.memoryUsage()` during the startup restore window.
 - React Native-style benchmark runs are executed in isolated worker processes with `--expose-gc` so each sample starts from a cleaner heap baseline and reduces cross-run leftover memory effects.
 - Interpretation: the isolated React Native-style measurement is the more reliable startup-heap signal here, and it shows lazy mode using less startup heap overall.
-- Web benchmark can be reproduced from the UI button **Run 3x large reload test (~60MB)**.
+- Web isolated benchmark can be reproduced with:
+  - `cd examples/react-comparison`
+  - `npm run benchmark:web-large-reload-isolated`
 - React Native-style benchmark can be reproduced with:
   - `cd examples/react-comparison`
   - `npm run benchmark:rn-large-reload`
