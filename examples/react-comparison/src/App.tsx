@@ -3,10 +3,10 @@ import {
   ApolloLink,
   HttpLink,
   InMemoryCache,
-  NormalizedCacheObject,
   gql,
 } from '@apollo/client'
 import { CachePersistor, LocalForageWrapper } from 'apollo3-cache-persist'
+import type { NormalizedCacheObject } from '@apollo/client'
 import localforage from 'localforage'
 import { useCallback, useMemo, useState } from 'react'
 
