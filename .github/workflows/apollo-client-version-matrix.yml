@@ -26,21 +26,19 @@ jobs:
       - name: Install default dependencies
         run: npm ci
 
-      - name: Install Apollo v2 runtime deps
+      - name: Prepare Apollo v2 runtime deps
         if: matrix.apolloVersion == '2'
-        run: npm install @apollo/client@0.0.0 -D --no-save || true
-
-      - name: Install Apollo v2 compatibility deps
-        if: matrix.apolloVersion == '2'
-        run: npm install apollo-link@1.2.14 apollo-utilities@1.3.4 -D --no-save
+        run: |
+          npm rm @apollo/client --no-save
+          npm install apollo-link@1.2.14 apollo-utilities@1.3.4 --no-save --legacy-peer-deps
 
       - name: Install Apollo v3 deps
         if: matrix.apolloVersion == '3'
-        run: npm install @apollo/client@^3 -D --no-save
+        run: npm install @apollo/client@^3 --no-save
 
       - name: Install Apollo v4 deps
         if: matrix.apolloVersion == '4'
-        run: npm install @apollo/client@^4 -D --no-save
+        run: npm install @apollo/client@^4 --no-save
 
       - name: Build
         run: npm run build
