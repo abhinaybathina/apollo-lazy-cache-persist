@@ -4,11 +4,12 @@ type ApolloRuntime = {
   getOperationName: (query: any) => string | null | undefined;
 };
 
+declare const require: any;
+
 let cachedApolloRuntime: ApolloRuntime | null = null;
 
 function requireModule(id: string) {
-  const dynamicRequire = (0, eval)("require");
-  return dynamicRequire(id);
+  return require(id);
 }
 
 export function getApolloRuntime(): ApolloRuntime {
@@ -19,11 +20,24 @@ export function getApolloRuntime(): ApolloRuntime {
   try {
     const core = requireModule("@apollo/client/core");
     const utilities = requireModule("@apollo/client/utilities");
+    const internalUtilities = (() => {
+      try {
+        return requireModule("@apollo/client/utilities/internal");
+      } catch {
+        return null;
+      }
+    })();
+    const getOperationName =
+      utilities.getOperationName ?? internalUtilities?.getOperationName;
+
+    if (!getOperationName) {
+      throw new Error("getOperationName unavailable");
+    }
 
     cachedApolloRuntime = {
       ApolloLink: core.ApolloLink,
       Observable: core.Observable,
-      getOperationName: utilities.getOperationName,
+      getOperationName,
     };
 
     return cachedApolloRuntime;

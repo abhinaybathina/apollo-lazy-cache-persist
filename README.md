@@ -70,6 +70,17 @@ Fresh result persists again
 npm install apollo-lazy-cache-persist
 ```
 
+## Apollo Client Version Support
+
+- Apollo Client v3 and v4 via `@apollo/client`
+- Apollo Client v2 via `apollo-link` + `apollo-utilities`
+
+For Apollo Client v2 projects, install the Apollo v2 link utilities in your app:
+
+```bash
+npm install apollo-link apollo-utilities
+```
+
 # Basic Usage
 
 ```js
@@ -284,6 +295,16 @@ Notes:
 - React Native-style benchmark can be reproduced with:
   - `cd examples/react-comparison`
   - `npm run benchmark:rn-large-reload`
+
+## Compatibility smoke test
+
+This repository includes a basic compatibility smoke test:
+
+```bash
+npm run test:apollo-compat
+```
+
+CI runs this smoke test across Apollo v2, v3, and v4 dependency sets.
 
 # License
 

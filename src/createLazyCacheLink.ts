@@ -13,7 +13,7 @@ export function createLazyCacheLink({
 }: LazyCacheLinkConfig) {
   const { ApolloLink, Observable, getOperationName } = getApolloRuntime();
 
-  return new ApolloLink((operation, forward) => {
+  return new ApolloLink((operation: any, forward: any) => {
     if (!isQueryOperation(operation)) {
       return forward(operation);
     }
@@ -61,9 +61,9 @@ export function createLazyCacheLink({
       }
     });
 
-    return new Observable((observer) => {
+    return new Observable((observer: any) => {
       const sub = forward(operation).subscribe({
-        next: (result) => {
+        next: (result: any) => {
           networkResolved = true;
 
           if (result?.data) {
@@ -72,7 +72,7 @@ export function createLazyCacheLink({
 
           observer.next(result);
         },
-        error: (err) => observer.error(err),
+        error: (err: any) => observer.error(err),
         complete: () => observer.complete(),
       });
 

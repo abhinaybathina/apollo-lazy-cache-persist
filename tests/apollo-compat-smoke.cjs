@@ -75,8 +75,8 @@ async function run() {
         next(result) {
           received.push(result);
         },
-        error(reject),
-        complete(resolve),
+        error: reject,
+        complete: resolve,
       });
   });
 
