@@ -6,6 +6,20 @@ import {
 } from "./utils";
 import { LazyCacheLinkConfig, LazyCacheStore } from "./types";
 
+type ForwardFn = (operation: unknown) => {
+  subscribe: (handlers: {
+    next: (result: unknown) => void;
+    error: (error: unknown) => void;
+    complete: () => void;
+  }) => { unsubscribe: () => void };
+};
+
+type ObserverLike = {
+  next: (value: unknown) => void;
+  error: (error: unknown) => void;
+  complete: () => void;
+};
+
 export function createLazyCacheLink({
   cache,
   store,
@@ -13,7 +27,7 @@ export function createLazyCacheLink({
 }: LazyCacheLinkConfig) {
   const { ApolloLink, Observable, getOperationName } = getApolloRuntime();
 
-  return new ApolloLink((operation: any, forward: any) => {
+  return new ApolloLink((operation: any, forward: ForwardFn) => {
     if (!isQueryOperation(operation)) {
       return forward(operation);
     }
@@ -61,7 +75,7 @@ export function createLazyCacheLink({
       }
     });
 
-    return new Observable((observer: any) => {
+    return new Observable((observer: ObserverLike) => {
       const sub = forward(operation).subscribe({
         next: (result: any) => {
           networkResolved = true;
@@ -72,7 +86,7 @@ export function createLazyCacheLink({
 
           observer.next(result);
         },
-        error: (err: any) => observer.error(err),
+        error: (err: unknown) => observer.error(err),
         complete: () => observer.complete(),
       });
 

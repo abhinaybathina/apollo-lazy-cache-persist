@@ -41,7 +41,9 @@ export function getApolloRuntime(): ApolloRuntime {
     };
 
     return cachedApolloRuntime;
-  } catch {}
+  } catch {
+    // Fallback to Apollo v2 packages when @apollo/client runtime modules are unavailable.
+  }
 
   try {
     const link = requireModule("apollo-link");
@@ -54,7 +56,9 @@ export function getApolloRuntime(): ApolloRuntime {
     };
 
     return cachedApolloRuntime;
-  } catch {}
+  } catch {
+    // Fall through and throw a unified error when neither Apollo runtime is resolvable.
+  }
 
   throw new Error(
     "apollo-lazy-cache-persist: Unable to resolve Apollo runtime. Install either @apollo/client (v3/v4) or apollo-link + apollo-utilities (v2).",
