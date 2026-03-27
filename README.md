@@ -1,13 +1,11 @@
 # apollo-lazy-cache-persist
 
+Restore Apollo cache **only when needed**, not all at startup.
+
+Stop Apollo Client from loading the entire cache at startup. Restore it lazily per-query to reduce startup time and memory usage. Supports Apollo Client v3 and v4.
+
 [![npm version](https://badge.fury.io/js/apollo-lazy-cache-persist.svg)](https://www.npmjs.com/package/apollo-lazy-cache-persist)
 [![npm downloads](https://img.shields.io/npm/dm/apollo-lazy-cache-persist.svg)](https://www.npmjs.com/package/apollo-lazy-cache-persist)
-
-Lazy query cache persistence for [Apollo Client](https://www.apollographql.com/docs/react/).
-
-Instead of restoring the **entire persisted cache during app startup**, this package restores **only the required query results when they are needed**.
-
-This approach significantly reduces **memory spikes and startup time** in applications with large GraphQL caches.
 
 ---
 
@@ -42,16 +40,27 @@ Network request executes normally
 Fresh result persists again
 ```
 
-### Benefits
+## 🧠 When should you use this?
 
-- ⚡ Faster startup time
-- 🧠 Lower memory usage
-- 📦 Smaller runtime cache footprint
+Use this if:
+
+- Your Apollo cache is large (>10MB)
+- Your app startup feels slow
+- You see memory spikes during cache restore
+- You're using Apollo Client v4 and need better persistence control
+
+---
+
+## 🚀 Benefits
+
+- ⚡ Faster startup time  
+- 🧠 Lower memory usage  
+- 📦 Smaller runtime cache footprint  
 - 🔄 Always updated with latest network response
 
 ---
 
-# Features
+## ✨ Features
 
 - Lazy query cache restoration
 - Query-level persistence
@@ -212,33 +221,10 @@ With hashing:
 `GetUsers:ab3f9k`
 
 # What this package does NOT do
-This package intentionally does not persist the entire Apollo cache.
+- Does NOT persist the entire Apollo cache
+- Does NOT persist manual cache updates (writeQuery, modify, etc.)
 
-It only persists network query results.
-
-Manual cache updates like below are not persisted.
-
-```
-cache.writeQuery
-cache.modify
-cache.writeFragment
-```
-
-This design keeps the system predictable and prevents storing inconsistent or optimistic data.
-
-# When should you use this?
-
-This package works best when:
-
-- Apollo cache becomes very large
-- Startup performance is important
-- Memory spikes from full cache restoration are problematic
-
-Example applications:
-
-- Large SaaS dashboards
-- Analytics platforms
-- Enterprise admin panels
+This keeps behavior predictable and avoids inconsistent data.
 
 # Comparison
 
