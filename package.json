@@ -1,7 +1,7 @@
 {
   "name": "apollo-lazy-cache-persist",
-  "version": "1.0.1",
-  "description": "Lazy per-query cache persistence for Apollo Client to reduce memory spikes and speed up startup.",
+  "version": "1.0.2",
+  "description": "Lazy per-query cache restore for Apollo Client (v3 & v4) to reduce startup time and memory usage.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -24,6 +24,9 @@
     "cache",
     "persist",
     "lazy",
+    "react",
+    "react-native",
+    "performance",
     "optimization",
     "indexeddb"
   ],
