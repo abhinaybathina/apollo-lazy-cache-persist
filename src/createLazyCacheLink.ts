@@ -1,5 +1,4 @@
-import { ApolloLink, Observable } from "@apollo/client/core";
-import { getOperationName } from "@apollo/client/utilities";
+import { getApolloRuntime } from "./apolloCompat";
 import {
   generateCacheKey,
   isPaginatedRequest,
@@ -7,12 +6,28 @@ import {
 } from "./utils";
 import { LazyCacheLinkConfig, LazyCacheStore } from "./types";
 
+type ForwardFn = (operation: unknown) => {
+  subscribe: (handlers: {
+    next: (result: unknown) => void;
+    error: (error: unknown) => void;
+    complete: () => void;
+  }) => { unsubscribe: () => void };
+};
+
+type ObserverLike = {
+  next: (value: unknown) => void;
+  error: (error: unknown) => void;
+  complete: () => void;
+};
+
 export function createLazyCacheLink({
   cache,
   store,
   hash,
 }: LazyCacheLinkConfig) {
-  return new ApolloLink((operation, forward) => {
+  const { ApolloLink, Observable, getOperationName } = getApolloRuntime();
+
+  return new ApolloLink((operation: any, forward: ForwardFn) => {
     if (!isQueryOperation(operation)) {
       return forward(operation);
     }
@@ -60,9 +75,9 @@ export function createLazyCacheLink({
       }
     });
 
-    return new Observable((observer) => {
+    return new Observable((observer: ObserverLike) => {
       const sub = forward(operation).subscribe({
-        next: (result) => {
+        next: (result: any) => {
           networkResolved = true;
 
           if (result?.data) {
@@ -71,7 +86,7 @@ export function createLazyCacheLink({
 
           observer.next(result);
         },
-        error: (err) => observer.error(err),
+        error: (err: unknown) => observer.error(err),
         complete: () => observer.complete(),
       });
 
