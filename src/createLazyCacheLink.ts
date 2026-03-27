@@ -1,5 +1,4 @@
-import { ApolloLink, Observable } from "@apollo/client/core";
-import { getOperationName } from "@apollo/client/utilities";
+import { getApolloRuntime } from "./apolloCompat";
 import {
   generateCacheKey,
   isPaginatedRequest,
@@ -12,6 +11,8 @@ export function createLazyCacheLink({
   store,
   hash,
 }: LazyCacheLinkConfig) {
+  const { ApolloLink, Observable, getOperationName } = getApolloRuntime();
+
   return new ApolloLink((operation, forward) => {
     if (!isQueryOperation(operation)) {
       return forward(operation);
