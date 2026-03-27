@@ -1,5 +1,6 @@
 const assert = require("assert");
 const { createLazyCacheStore, createLazyCacheLink } = require("../dist");
+const { generateCacheKey } = require("../dist/utils");
 
 class MemoryStorage {
   constructor() {
@@ -81,7 +82,9 @@ async function run() {
   });
 
   assert.equal(received.length, 1);
-  const storedValue = await storage.getItem('GetUser:{"id":"1"}');
+  const storedValue = await storage.getItem(
+    generateCacheKey("GetUser", { id: "1" }),
+  );
   assert.ok(storedValue, "Expected persisted value to be set");
 
   const entry =

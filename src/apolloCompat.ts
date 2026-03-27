@@ -4,13 +4,9 @@ type ApolloRuntime = {
   getOperationName: (query: any) => string | null | undefined;
 };
 
-declare const require: any;
+declare const require: (id: string) => any;
 
 let cachedApolloRuntime: ApolloRuntime | null = null;
-
-function requireModule(id: string) {
-  return require(id);
-}
 
 export function getApolloRuntime(): ApolloRuntime {
   if (cachedApolloRuntime) {
@@ -18,11 +14,11 @@ export function getApolloRuntime(): ApolloRuntime {
   }
 
   try {
-    const core = requireModule("@apollo/client/core");
-    const utilities = requireModule("@apollo/client/utilities");
+    const core = require("@apollo/client/core");
+    const utilities = require("@apollo/client/utilities");
     const internalUtilities = (() => {
       try {
-        return requireModule("@apollo/client/utilities/internal");
+        return require("@apollo/client/utilities/internal");
       } catch {
         return null;
       }
@@ -46,8 +42,8 @@ export function getApolloRuntime(): ApolloRuntime {
   }
 
   try {
-    const link = requireModule("apollo-link");
-    const utilities = requireModule("apollo-utilities");
+    const link = require("apollo-link");
+    const utilities = require("apollo-utilities");
 
     cachedApolloRuntime = {
       ApolloLink: link.ApolloLink,
@@ -61,6 +57,6 @@ export function getApolloRuntime(): ApolloRuntime {
   }
 
   throw new Error(
-    "apollo-lazy-cache-persist: Unable to resolve Apollo runtime. Install either @apollo/client (v3/v4) or apollo-link + apollo-utilities (v2).",
+    "apollo-lazy-cache-persist: Unable to resolve Apollo runtime. Install @apollo/client v3 or v4, or for Apollo Client v2 install apollo-link and apollo-utilities.",
   );
 }
