@@ -92,7 +92,23 @@ async function run() {
   assert.deepEqual(entry.data, { user: { id: "1", name: "Ada" } });
 }
 
+async function runLegacyRawValueReadTest() {
+  const storage = new MemoryStorage();
+  const store = createLazyCacheStore({ storage });
+
+  await storage.setItem(
+    generateCacheKey("GetUser", { id: "legacy" }),
+    JSON.stringify({ user: { id: "legacy", name: "Legacy Ada" } }),
+  );
+
+  const restored = await store.get(generateCacheKey("GetUser", { id: "legacy" }));
+  assert.deepEqual(restored, {
+    user: { id: "legacy", name: "Legacy Ada" },
+  });
+}
+
 run()
+  .then(runLegacyRawValueReadTest)
   .then(() => {
     console.log("Apollo compatibility smoke test passed.");
   })
