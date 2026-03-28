@@ -1,11 +1,11 @@
 import { LazyCacheStore, LazyCacheStoreConfig } from "./types";
 
 type StoreEntry = {
-  data: any;
+  data: unknown;
   timestamp?: number;
 };
 
-function normalizeEntry(raw: any, serialize: boolean): StoreEntry | null {
+function normalizeEntry(raw: unknown, serialize: boolean): StoreEntry | null {
   if (raw == null) {
     return null;
   }
@@ -21,9 +21,13 @@ function normalizeEntry(raw: any, serialize: boolean): StoreEntry | null {
   }
 
   if (parsed && typeof parsed === "object" && "data" in parsed) {
+    const parsedEntry = parsed as { data: unknown; timestamp?: unknown };
     return {
-      data: parsed.data,
-      timestamp: typeof parsed.timestamp === "number" ? parsed.timestamp : undefined,
+      data: parsedEntry.data,
+      timestamp:
+        typeof parsedEntry.timestamp === "number"
+          ? parsedEntry.timestamp
+          : undefined,
     };
   }
 
