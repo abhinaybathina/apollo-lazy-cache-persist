@@ -1,5 +1,44 @@
 import { LazyCacheStore, LazyCacheStoreConfig } from "./types";
 
+type StoreEntry = {
+  data: unknown;
+  timestamp?: number;
+};
+
+function normalizeEntry(raw: unknown, serialize: boolean): StoreEntry | null {
+  if (raw == null) {
+    return null;
+  }
+
+  let parsed = raw;
+
+  if (serialize && typeof raw === "string") {
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      // Re-throw so outer callers can log and handle storage corruption appropriately.
+      throw err instanceof Error
+        ? err
+        : new Error("LazyCacheStore: failed to parse cached entry as JSON");
+    }
+  }
+
+  if (parsed && typeof parsed === "object" && "data" in parsed) {
+    const parsedEntry = parsed as { data: unknown; timestamp?: unknown };
+    return {
+      data: parsedEntry.data,
+      timestamp:
+        typeof parsedEntry.timestamp === "number"
+          ? parsedEntry.timestamp
+          : undefined,
+    };
+  }
+
+  return {
+    data: parsed,
+  };
+}
+
 export function createLazyCacheStore(
   config: LazyCacheStoreConfig,
 ): LazyCacheStore {
@@ -11,15 +50,11 @@ export function createLazyCacheStore(
     if (disabled) return null;
 
     try {
-      let entry = await storage.getItem(key);
+      const entry = normalizeEntry(await storage.getItem(key), serialize);
 
       if (!entry) return null;
 
-      if (serialize && typeof entry === "string") {
-        entry = JSON.parse(entry);
-      }
-
-      if (ttl && Date.now() - entry.timestamp > ttl) {
+      if (ttl && typeof entry.timestamp === "number" && Date.now() - entry.timestamp > ttl) {
         await storage.removeItem?.(key);
         return null;
       }
@@ -57,16 +92,13 @@ export function createLazyCacheStore(
       }
 
       // 🔹 multi-tab safety check
-      const existing = await storage.getItem(key);
+      const existing = normalizeEntry(await storage.getItem(key), serialize);
 
       if (existing) {
-        let parsed = existing;
-
-        if (serialize && typeof existing === "string") {
-          parsed = JSON.parse(existing);
-        }
-
-        if (parsed?.timestamp && parsed.timestamp > entry.timestamp) {
+        if (
+          typeof existing.timestamp === "number" &&
+          existing.timestamp > entry.timestamp
+        ) {
           return;
         }
       }

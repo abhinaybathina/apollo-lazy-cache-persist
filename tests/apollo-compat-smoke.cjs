@@ -92,7 +92,35 @@ async function run() {
   assert.deepEqual(entry.data, { user: { id: "1", name: "Ada" } });
 }
 
+async function runLegacyRawValueReadTest() {
+  const storage = new MemoryStorage();
+  const store = createLazyCacheStore({ storage });
+  const key = generateCacheKey("GetUser", { id: "legacy" });
+
+  await storage.setItem(
+    key,
+    JSON.stringify({ user: { id: "legacy", name: "Legacy Ada" } }),
+  );
+
+  const restored = await store.get(key);
+  assert.deepEqual(restored, {
+    user: { id: "legacy", name: "Legacy Ada" },
+  });
+
+  await store.set(key, { user: { id: "legacy", name: "Legacy Ada (fresh)" } });
+
+  const normalizedValue = await storage.getItem(key);
+  assert.equal(typeof normalizedValue, "string");
+
+  const normalizedEntry = JSON.parse(normalizedValue);
+  assert.deepEqual(normalizedEntry.data, {
+    user: { id: "legacy", name: "Legacy Ada (fresh)" },
+  });
+  assert.equal(typeof normalizedEntry.timestamp, "number");
+}
+
 run()
+  .then(runLegacyRawValueReadTest)
   .then(() => {
     console.log("Apollo compatibility smoke test passed.");
   })
