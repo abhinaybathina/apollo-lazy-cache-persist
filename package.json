@@ -1,6 +1,6 @@
 {
   "name": "apollo-lazy-cache-persist",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Lazy per-query cache restore for Apollo Client (v3 & v4) to reduce startup time and memory usage.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
