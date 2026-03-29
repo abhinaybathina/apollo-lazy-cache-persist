@@ -15,8 +15,11 @@ function normalizeEntry(raw: unknown, serialize: boolean): StoreEntry | null {
   if (serialize && typeof raw === "string") {
     try {
       parsed = JSON.parse(raw);
-    } catch {
-      return null;
+    } catch (err) {
+      // Re-throw so outer callers can log and handle storage corruption appropriately.
+      throw err instanceof Error
+        ? err
+        : new Error("LazyCacheStore: failed to parse cached entry as JSON");
     }
   }
 
