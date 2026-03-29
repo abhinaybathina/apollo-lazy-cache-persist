@@ -1,6 +1,6 @@
 {
   "name": "apollo-lazy-cache-persist",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Lazy per-query cache restore for Apollo Client (v3 & v4) to reduce startup time and memory usage.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,12 +8,14 @@
     "dist",
     "README.md"
   ],
+  "sideEffects": false,
   "repository": {
     "type": "git",
     "url": "git+https://github.com/abhinaybathina/apollo-lazy-cache-persist.git"
   },
   "scripts": {
     "build": "tsc",
+    "prepublishOnly": "npm run build",
     "test:apollo-compat": "node tests/apollo-compat-smoke.cjs"
   },
   "author": "Abhinay Bathina",
@@ -31,20 +33,7 @@
     "indexeddb"
   ],
   "peerDependencies": {
-    "@apollo/client": "^3 || ^4",
-    "apollo-link": "^1.2.14",
-    "apollo-utilities": "^1.3.4"
-  },
-  "peerDependenciesMeta": {
-    "@apollo/client": {
-      "optional": true
-    },
-    "apollo-link": {
-      "optional": true
-    },
-    "apollo-utilities": {
-      "optional": true
-    }
+    "@apollo/client": "^3 || ^4"
   },
   "license": "MIT",
   "devDependencies": {

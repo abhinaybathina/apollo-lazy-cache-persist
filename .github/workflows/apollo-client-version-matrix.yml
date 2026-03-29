@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        apolloVersion: ["2", "3", "4"]
+        apolloVersion: ["3", "4"]
 
     steps:
       - name: Checkout
@@ -28,12 +28,6 @@ jobs:
 
       - name: Install default dependencies
         run: npm ci
-
-      - name: Prepare Apollo v2 runtime deps
-        if: matrix.apolloVersion == '2'
-        run: |
-          npm rm @apollo/client --no-save
-          npm install apollo-link@^1.2.14 apollo-utilities@^1.3.4 --no-save --legacy-peer-deps
 
       - name: Install Apollo v3 deps
         if: matrix.apolloVersion == '3'
